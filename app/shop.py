@@ -1,32 +1,41 @@
 from __future__ import annotations
 import datetime
 
+from app.location import Location
+from app.product import Product
+
 
 class Shop:
     def __init__(
             self,
             name: str,
-            location: dict,
-            products: dict
+            location: Location,
+            products: list[Product]
     ) -> None:
         self.name = name
         self.location = location
         self.products = products
 
-    def serve_customer(self, cust_name: str, cust_products: dict) -> None:
+    def serve_customer(
+            self,
+            name: str,
+            product_cart: list[Product]
+    ) -> None:
         self.print_date()
-        print(f"Thanks, {cust_name}, for your purchase!")
+        print(f"Thanks, {name}, for your purchase!")
         print("You have bought:")
 
-        total_cost = 0
-        for item in cust_products:
-            prod_price = cust_products[item] * self.products[item]
-            if prod_price == int(prod_price):
-                prod_price = int(prod_price)
+        prod_price = {product.name: product.price for product in self.products}
+        for prod in product_cart:
+            prod_cost = prod.calculate_cost(prod_price.get(prod.name))
+            print(
+                f"{prod.quantity} {prod.name}s "
+                f"for {prod_cost.normalize()} dollars"
+            )
 
-            print(f"{cust_products[item]} {item}s for {prod_price} dollars")
-            total_cost += prod_price
-
+        total_cost = Product.calculate_total_cost(
+            product_cart, self.products
+        )
         print(f"Total cost is {total_cost} dollars")
         print("See you again!\n")
 
@@ -38,8 +47,8 @@ class Shop:
     def get_shop_from_dict(cls, shop_dict: dict) -> Shop:
         return cls(
             shop_dict["name"],
-            shop_dict["location"],
-            shop_dict["products"]
+            Location.get_location(*shop_dict["location"]),
+            Product.get_products(shop_products=shop_dict["products"]),
         )
 
     def __str__(self) -> str:

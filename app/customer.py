@@ -1,7 +1,8 @@
 from __future__ import annotations
-from math import sqrt
 
 from app.car import Car
+from app.location import Location
+from app.product import Product
 from app.shop import Shop
 
 
@@ -9,8 +10,8 @@ class Customer:
     def __init__(
             self,
             name: str,
-            product_cart: dict,
-            location: dict,
+            product_cart: list[Product],
+            location: Location,
             money: int,
             car: Car
     ) -> None:
@@ -49,37 +50,25 @@ class Customer:
 
     def get_shop_trip_cost(self, shop: Shop) -> None:
         distance_price = self.get_distance_price(shop.location)
-        products_price = self.get_product_price(shop.products)
-        cost_of_trip = round(distance_price + products_price, 2)
+        products_price = Product.calculate_total_cost(
+            self.product_cart, shop.products
+        )
+        cost_of_trip = round(distance_price + float(products_price), 2)
         print(f"{self.name}'s trip to the {shop.name} costs {cost_of_trip}")
         self.shop_trips[cost_of_trip] = shop
 
-    def get_distance_price(self, shop_location: dict) -> float:
+    def get_distance_price(self, shop_location: Location) -> float:
         return (
-            self.get_distance(shop_location) * 2
+            self.location.calculate_distance(shop_location) * 2
             * Car.fuel_price * (self.car.fuel_consumption / 100)
-        )
-
-    def get_distance(self, shop_location: dict) -> float:
-        """Formula for calculating distance between 2 points:
-        sqrt((x2 - x1)^2 + (y2 - y1)^2)"""
-        return sqrt(
-            (shop_location[0] - self.location[0]) ** 2
-            + (shop_location[1] - self.location[1]) ** 2
-        )
-
-    def get_product_price(self, shop_products: dict) -> float:
-        return sum(
-            self.product_cart[item] * price
-            for item, price in shop_products.items()
         )
 
     @classmethod
     def get_customer_from_dict(cls, custom: dict) -> Customer:
         return cls(
             custom["name"],
-            custom["product_cart"],
-            custom["location"],
+            Product.get_products(product_cart=custom["product_cart"]),
+            Location.get_location(*custom["location"]),
             custom["money"],
             Car(**custom["car"])
         )
